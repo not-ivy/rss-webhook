@@ -1,0 +1,5 @@
+@font-face {
+  font-family: 'Commit Mono';
+  font-display: swap;
+  src: url('./CommitMono\ VariableFont.woff2') format('woff2') url('./CommitMono\ VariableFont.ttf') format('truetype') url('./CommitMono-375-Regular.otf') format('opentype');
+}
