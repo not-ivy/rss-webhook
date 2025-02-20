@@ -3,16 +3,16 @@ import kv from "../../../utils/kv.ts";
 import { State } from "../../_middleware.ts";
 import * as v from "@valibot/valibot";
 
-const StoredFeeds = v.object({
+export const StoredFeeds = v.array(v.object({
   from: v.pipe(v.string(), v.url()),
   to: v.array(v.pipe(v.string(), v.url())),
-});
+}));
 
-type TypeStoredFeeds = v.InferOutput<typeof StoredFeeds>;
+export type TypeStoredFeeds = v.InferOutput<typeof StoredFeeds>;
 
 const UpdateFeedForm = v.object({
-  from: StoredFeeds.entries.from,
-  to: StoredFeeds.entries.to.item,
+  from: StoredFeeds.item.entries.from,
+  to: StoredFeeds.item.entries.to.item,
 });
 
 const jsonResponse = (data: unknown, code: number = 200) =>
@@ -26,7 +26,7 @@ const jsonResponse = (data: unknown, code: number = 200) =>
 export const handler: Handlers<unknown, State> = {
   async GET(_, ctx) {
     const feeds = v.safeParse(
-      StoredFeeds,
+      v.nullable(StoredFeeds),
       (await kv.get(["feeds", ctx.state.id!])).value,
     );
 
@@ -51,40 +51,31 @@ export const handler: Handlers<unknown, State> = {
     const data = v.parse(
       v.nullable(StoredFeeds),
       (await kv.get(["feeds", ctx.state.id!])).value,
+    ) ?? [];
+
+    const existing = data.findIndex((x) => x.from === form.output.from);
+    if (existing != -1) data[existing].to.push(form.output.to);
+    else data.push({ from: form.output.from, to: [form.output.to] });
+
+    await kv.set(
+      ["feeds", ctx.state.id!],
+      data.map((x) => ({ ...x, to: [...new Set(x.to)] })),
     );
-    const modified = data
-      ? {
-        from: data.from ?? form.output.from,
-        to: [...new Set([...data.to, form.output.to])],
-      } satisfies TypeStoredFeeds
-      : {
-        from: form.output.from,
-        to: [form.output.to],
-      } satisfies TypeStoredFeeds;
 
-    await kv.set(["feeds", ctx.state.id!], modified);
-
-    return jsonResponse(modified, 201);
+    return jsonResponse(data, 201);
   },
   async PUT(req, ctx) {
     const data = v.safeParse(StoredFeeds, await req.json());
     if (!data.success) return jsonResponse(data.issues, 400);
 
-    const fetchingUrls = [...new Set(data.output.to)].map(async (url) =>
-      await fetch(url)
-    );
-    const invalidUrls: string[] = [];
-
-    for await (const remote of fetchingUrls) {
-      try {
-        (new DOMParser()).parseFromString(await remote.text(), "text/xml");
-      } catch {
-        invalidUrls.push(remote.url);
-        return new Response(
-          `these urls does not contain valid xml:\n${invalidUrls.join("\n  ")}`,
-          { status: 400 },
-        );
-      }
+    try {
+      const remotes = await Promise.all(
+        data.output.map(async (x) => await (await fetch(x.from)).text()),
+      );
+      const parser = new DOMParser();
+      remotes.map((x) => parser.parseFromString(x, "text/xml"));
+    } catch {
+      return new Response("some urls provided were invalid", { status: 400 });
     }
 
     await kv.set(["feeds", ctx.state.id!], data.output);
@@ -95,19 +86,20 @@ export const handler: Handlers<unknown, State> = {
     const form = v.safeParse(UpdateFeedForm, await req.formData());
     if (!form.success) return jsonResponse(form.issues, 400);
 
-    const data = v.parse(
+    let data = v.parse(
       v.nullable(StoredFeeds),
       (await kv.get(["feeds", ctx.state.id!])).value,
     );
-    if (!data) return jsonResponse(data, 201);
+    if (!data) return jsonResponse(data, 304);
 
-    const modified = {
-      from: data.from,
-      to: [...new Set(data.to.filter((url) => url != form.output.to))],
-    } satisfies TypeStoredFeeds;
+    const i = data.findIndex((x) =>
+      (x.from === form.output.from) && (x.to.includes(form.output.to))
+    );
+    if (i === -1) return jsonResponse(data, 304);
+    data[i].to = data[i].to.filter((x) => x != form.output.to);
 
-    await kv.set(["feeds", ctx.state.id!], modified);
+    await kv.set(["feeds", ctx.state.id!], data);
 
-    return jsonResponse(modified, 201);
+    return jsonResponse(data, 201);
   },
 };
