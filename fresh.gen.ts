@@ -2,18 +2,32 @@
 // This file SHOULD be checked into source version control.
 // This file is automatically updated during development when running `dev.ts`.
 
+import * as $_protected_middleware from "./routes/(protected)/_middleware.ts";
+import * as $_protected_api_addfeed from "./routes/(protected)/api/addfeed.ts";
+import * as $_protected_api_feeds from "./routes/(protected)/api/feeds.ts";
+import * as $_protected_dashboard from "./routes/(protected)/dashboard.tsx";
 import * as $_404 from "./routes/_404.tsx";
 import * as $_app from "./routes/_app.tsx";
-import * as $api_joke from "./routes/api/joke.ts";
+import * as $_middleware from "./routes/_middleware.ts";
+import * as $api_callback from "./routes/api/callback.ts";
+import * as $api_debug from "./routes/api/debug.ts";
+import * as $api_signin from "./routes/api/signin.ts";
 import * as $index from "./routes/index.tsx";
 
 import type { Manifest } from "$fresh/server.ts";
 
 const manifest = {
   routes: {
+    "./routes/(protected)/_middleware.ts": $_protected_middleware,
+    "./routes/(protected)/api/addfeed.ts": $_protected_api_addfeed,
+    "./routes/(protected)/api/feeds.ts": $_protected_api_feeds,
+    "./routes/(protected)/dashboard.tsx": $_protected_dashboard,
     "./routes/_404.tsx": $_404,
     "./routes/_app.tsx": $_app,
-    "./routes/api/joke.ts": $api_joke,
+    "./routes/_middleware.ts": $_middleware,
+    "./routes/api/callback.ts": $api_callback,
+    "./routes/api/debug.ts": $api_debug,
+    "./routes/api/signin.ts": $api_signin,
     "./routes/index.tsx": $index,
   },
   islands: {},
