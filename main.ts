@@ -63,7 +63,7 @@ const broadcast = async () => {
     }),
   );
 
-  return data;
+  return;
 };
 
 Deno.cron("fetch rss", "0 */2 * * *", broadcast);
