@@ -17,7 +17,7 @@ import Parser from "rss-parser";
 const rssParser = new Parser();
 
 const broadcast = async () => {
-  const data = await Promise.all(
+  await Promise.all(
     (await Array.fromAsync(kv.list({
       prefix: ["feeds"],
     }))).flatMap((x) => x.value as TypeStoredFeeds).flatMap(async (x) => {
@@ -25,7 +25,6 @@ const broadcast = async () => {
         await (await fetch(x.from)).text(),
       );
       return Promise.all(x.to.map(async (y) => {
-        kv.delete([x.from, y]);
         const lastSent = (await kv.get([x.from, y])).value as number ?? 0;
         const unsent = rss.items.filter((i) =>
           i.isoDate && (Date.parse(i.isoDate) > lastSent)
@@ -49,7 +48,7 @@ const broadcast = async () => {
                 name: i.author,
               },
               title: i.title,
-              description: i.content,
+              description: `${i.content}\n\n${rss.description}`.trim(),
               url: i.link,
               timestamp: i.isoDate,
               footer: {

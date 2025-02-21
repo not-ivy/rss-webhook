@@ -10,7 +10,6 @@ import * as $_404 from "./routes/_404.tsx";
 import * as $_app from "./routes/_app.tsx";
 import * as $_middleware from "./routes/_middleware.ts";
 import * as $api_callback from "./routes/api/callback.ts";
-import * as $api_debug from "./routes/api/debug.ts";
 import * as $api_signin from "./routes/api/signin.ts";
 import * as $index from "./routes/index.tsx";
 
@@ -26,7 +25,6 @@ const manifest = {
     "./routes/_app.tsx": $_app,
     "./routes/_middleware.ts": $_middleware,
     "./routes/api/callback.ts": $api_callback,
-    "./routes/api/debug.ts": $api_debug,
     "./routes/api/signin.ts": $api_signin,
     "./routes/index.tsx": $index,
   },
