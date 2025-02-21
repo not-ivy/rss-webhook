@@ -2,6 +2,7 @@ import { Handlers } from "$fresh/server.ts";
 import kv from "../../../utils/kv.ts";
 import { State } from "../../_middleware.ts";
 import * as v from "@valibot/valibot";
+import Parser from "rss-parser";
 
 export const StoredFeeds = v.array(v.object({
   from: v.pipe(v.string(), v.url()),
@@ -35,14 +36,19 @@ export const handler: Handlers<unknown, State> = {
       : jsonResponse(feeds.issues, 500);
   },
   async POST(req, ctx) {
-    const form = v.safeParse(UpdateFeedForm, await req.formData());
+    const form = v.safeParse(
+      UpdateFeedForm,
+      Object.fromEntries((await req.formData()).entries()),
+    );
     if (!form.success) return jsonResponse(form.issues, 400);
 
-    const remote = await (await fetch(form.output.to)).text();
+    const remote = await (await fetch(form.output.from)).text();
+    const rssParser = new Parser();
 
     try {
-      (new DOMParser()).parseFromString(remote, "text/xml");
-    } catch {
+      await rssParser.parseString(remote);
+    } catch (e) {
+      console.error(e);
       return new Response("provided url does not contain valid xml", {
         status: 400,
       });
@@ -68,12 +74,15 @@ export const handler: Handlers<unknown, State> = {
     const data = v.safeParse(StoredFeeds, await req.json());
     if (!data.success) return jsonResponse(data.issues, 400);
 
+    const rssParser = new Parser();
+
     try {
       const remotes = await Promise.all(
         data.output.map(async (x) => await (await fetch(x.from)).text()),
       );
-      const parser = new DOMParser();
-      remotes.map((x) => parser.parseFromString(x, "text/xml"));
+      await Promise.all(
+        remotes.map(async (x) => await rssParser.parseString(x)),
+      );
     } catch {
       return new Response("some urls provided were invalid", { status: 400 });
     }
@@ -83,10 +92,13 @@ export const handler: Handlers<unknown, State> = {
     return jsonResponse(data, 201);
   },
   async DELETE(req, ctx) {
-    const form = v.safeParse(UpdateFeedForm, await req.formData());
+    const form = v.safeParse(
+      UpdateFeedForm,
+      Object.fromEntries((await req.formData()).entries()),
+    );
     if (!form.success) return jsonResponse(form.issues, 400);
 
-    let data = v.parse(
+    const data = v.parse(
       v.nullable(StoredFeeds),
       (await kv.get(["feeds", ctx.state.id!])).value,
     );

@@ -7,6 +7,7 @@ export async function handler(
   ctx: FreshContext<State>,
 ) {
   try {
+    if (!ctx.state.session) throw new Error();
     const discordInfo = await (await fetch(
       "https://discord.com/api/users/@me",
       {
@@ -18,12 +19,13 @@ export async function handler(
       },
     )).json();
     ctx.state.id = discordInfo.id;
+    ctx.state.name = discordInfo.global_name ?? discordInfo.username;
     return ctx.next();
   } catch {
     return new Response(null, {
-      status: 403,
+      status: 303,
       headers: {
-        "location": "/api/signin",
+        "location": "/",
       },
     });
   }

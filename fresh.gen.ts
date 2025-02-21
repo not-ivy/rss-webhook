@@ -3,7 +3,7 @@
 // This file is automatically updated during development when running `dev.ts`.
 
 import * as $_protected_middleware from "./routes/(protected)/_middleware.ts";
-import * as $_protected_api_addfeed from "./routes/(protected)/api/addfeed.ts";
+import * as $_protected_addfeed from "./routes/(protected)/addfeed.tsx";
 import * as $_protected_api_feeds from "./routes/(protected)/api/feeds.ts";
 import * as $_protected_dashboard from "./routes/(protected)/dashboard.tsx";
 import * as $_404 from "./routes/_404.tsx";
@@ -19,7 +19,7 @@ import type { Manifest } from "$fresh/server.ts";
 const manifest = {
   routes: {
     "./routes/(protected)/_middleware.ts": $_protected_middleware,
-    "./routes/(protected)/api/addfeed.ts": $_protected_api_addfeed,
+    "./routes/(protected)/addfeed.tsx": $_protected_addfeed,
     "./routes/(protected)/api/feeds.ts": $_protected_api_feeds,
     "./routes/(protected)/dashboard.tsx": $_protected_dashboard,
     "./routes/_404.tsx": $_404,
